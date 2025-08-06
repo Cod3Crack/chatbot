@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración del Chatbot</title>
+    {% if favicon_url %}
+        <link rel="icon" href="{{ favicon_url }}">
+    {% endif %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-gray-900 text-gray-300 p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700">
+            <h1 class="text-3xl font-bold text-white mb-2">Panel de Administración</h1>
+            <p class="text-gray-400 mb-8">Gestiona la configuración, imágenes y documentos de tu asistente.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="p-4 mb-6 text-sm rounded-lg {{ 'bg-green-900 text-green-300' if category == 'success' else 'bg-red-900 text-red-300' }}" role="alert">
+                            <span class="font-medium">{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Configuración General -->
+            <form action="{{ url_for('update_settings') }}" method="post" enctype="multipart/form-data">
+                <h2 class="text-2xl font-semibold text-white border-b border-gray-600 pb-2 mb-6">Configuración General</h2>
+                <div class="mb-8"><label for="company_name" class="block text-lg font-semibold text-gray-200 mb-2">🏢 Nombre de la Empresa</label><input type="text" name="company_name" id="company_name" value="{{ company_name }}" class="w-full p-3 bg-gray-900 border border-gray-600 rounded-lg text-gray-300 focus:ring-2 focus:ring-indigo-500" placeholder="Ej: Innovatech Soluciones"></div>
+                <div class="mb-8"><label for="logo" class="block text-lg font-semibold text-gray-200 mb-2">🖼️ Logo de la Empresa</label><input type="file" name="logo" id="logo" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-indigo-500 file:text-white hover:file:bg-indigo-600"/></div>
+                <div class="mb-8"><label for="company-context" class="block text-lg font-semibold text-gray-200 mb-2">🧠 Base de Conocimiento</label><textarea id="company-context" name="context" class="w-full h-40 p-4 bg-gray-900 border border-gray-600 rounded-lg text-gray-300 focus:ring-2 focus:ring-indigo-500" placeholder="Información general de la empresa...">{{ context_data }}</textarea></div>
+                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors">Guardar Configuración General</button>
+            </form>
+
+            <!-- Galería de Imágenes -->
+            <hr class="my-10 border-gray-600"><h2 class="text-2xl font-semibold text-white border-b border-gray-600 pb-2 mb-6">Galería de Imágenes</h2>
+            <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data" class="bg-gray-900 p-6 rounded-lg border border-gray-700 mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Añadir Nueva Imagen</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div><label for="image_file" class="block text-sm font-medium text-gray-300 mb-2">Archivo de Imagen</label><input type="file" name="image_file" id="image_file" required class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"/></div>
+                    <div><label for="tags" class="block text-sm font-medium text-gray-300 mb-2">Etiquetas (separadas por comas)</label><input type="text" name="tags" id="tags" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-gray-300 focus:ring-2 focus:ring-blue-500" placeholder="Ej: producto rojo, oferta, modelo X"></div>
+                </div><button type="submit" class="mt-6 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors">Añadir a la Galería</button>
+            </form>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {% for filename, tags in image_catalog.items() %}<div class="bg-gray-900 rounded-lg overflow-hidden border border-gray-700"><img src="{{ url_for('static', filename='product_images/' + filename) }}" alt="{{ tags }}" class="w-full h-40 object-cover"><div class="p-4"><p class="text-sm text-gray-400 truncate" title="{{ tags }}">{{ tags }}</p><form action="{{ url_for('delete_image', filename=filename) }}" method="post" class="mt-4"><button type="submit" class="w-full text-center text-sm bg-red-800 hover:bg-red-700 text-white font-semibold py-2 px-3 rounded-md transition-colors">Eliminar</button></form></div></div>{% else %}<p class="col-span-full text-center text-gray-500">No hay imágenes en la galería.</p>{% endfor %}
+            </div>
+
+            <!-- NUEVA SECCIÓN: Galería de Documentos -->
+            <hr class="my-10 border-gray-600"><h2 class="text-2xl font-semibold text-white border-b border-gray-600 pb-2 mb-6">Galería de Documentos</h2>
+            <form action="{{ url_for('upload_document') }}" method="post" enctype="multipart/form-data" class="bg-gray-900 p-6 rounded-lg border border-gray-700 mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Añadir Nuevo Documento</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div><label for="doc_file" class="block text-sm font-medium text-gray-300 mb-2">Archivo (PDF, DOCX, TXT)</label><input type="file" name="doc_file" id="doc_file" required class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-purple-500 file:text-white hover:file:bg-purple-600"/></div>
+                    <div><label for="doc_tags" class="block text-sm font-medium text-gray-300 mb-2">Etiquetas (separadas por comas)</label><input type="text" name="doc_tags" id="doc_tags" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-gray-300 focus:ring-2 focus:ring-purple-500" placeholder="Ej: manual de usuario, política, precios"></div>
+                </div><button type="submit" class="mt-6 w-full bg-purple-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors">Añadir Documento</button>
+            </form>
+            <div class="space-y-4">
+                {% for filename, tags in doc_catalog.items() %}<div class="bg-gray-900 p-4 rounded-lg border border-gray-700 flex items-center justify-between"><div><p class="font-semibold text-white">{{ filename }}</p><p class="text-sm text-gray-400">{{ tags }}</p></div><form action="{{ url_for('delete_document', filename=filename) }}" method="post"><button type="submit" class="text-sm bg-red-800 hover:bg-red-700 text-white font-semibold py-2 px-3 rounded-md transition-colors">Eliminar</button></form></div>{% else %}<p class="text-center text-gray-500">No hay documentos en la galería.</p>{% endfor %}
+            </div>
+        </div>
+        <div class="mt-8 text-center"><a href="/" target="_blank" class="text-indigo-400 hover:text-indigo-300 font-semibold">Ver Chat en Vivo &rarr;</a></div>
+    </div>
+</body>
+</html>

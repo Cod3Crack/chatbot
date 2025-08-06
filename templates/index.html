@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ company_name or 'Asistente Virtual' }}</title>
+    {% if favicon_url %}
+        <link rel="icon" href="{{ favicon_url }}">
+    {% endif %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #111827; }
+        .chat-container { background: #1f2937; border-radius: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; overflow: hidden; height: 90vh; border: 1px solid #374151; }
+        .chat-header { background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 120px; }
+        .chat-messages { flex-grow: 1; padding: 1.5rem; overflow-y: auto; background-color: #111827; }
+        .message { margin-bottom: 1rem; display: flex; max-width: 80%; }
+        .message.user { margin-left: auto; flex-direction: row-reverse; }
+        .message-bubble { padding: 0.75rem 1rem; border-radius: 1rem; line-height: 1.5; word-wrap: break-word; }
+        .message.user .message-bubble { background-color: #3b82f6; color: white; border-bottom-right-radius: 0.25rem; }
+        .message.bot .message-bubble { background-color: #374151; color: #d1d5db; border-bottom-left-radius: 0.25rem; }
+        .message-bubble a { color: #60a5fa; text-decoration: underline; }
+        .message-bubble a:hover { color: #93c5fd; }
+        .message.user .message-bubble a { color: #bfdbfe; }
+        .message-avatar { width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; flex-shrink: 0; overflow: hidden; }
+        .message.user .message-avatar { background-color: #3b82f6; margin-left: 0.75rem; }
+        .message.bot .message-avatar { background-color: #4b5563; margin-right: 0.75rem; }
+        .chat-input-area { border-top: 1px solid #374151; padding: 1rem; background-color: #1f2937; }
+        .chat-input { border: 2px solid #4b5563; background-color: #374151; color: #d1d5db; }
+        .chat-input:focus { border-color: #3b82f6; outline: none; }
+        .send-button { background-color: #3b82f6; }
+        .send-button:hover { background-color: #2563eb; }
+        .send-button:disabled { background-color: #4b5563; cursor: not-allowed; }
+        .typing-indicator span { height: 8px; width: 8px; background-color: #6b7280; border-radius: 50%; display: inline-block; animation: bounce 1.4s infinite ease-in-out both; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
+        
+        /* --- ESTILOS CORREGIDOS --- */
+        .download-button { 
+            display: inline-flex; 
+            align-items: center; 
+            background-color: #7c3aed; 
+            color: white !important; /* Asegura que el texto sea blanco */
+            padding: 8px 16px; 
+            border-radius: 8px; 
+            text-decoration: none !important; /* Quita el subrayado */
+            font-weight: 500; 
+            margin-top: 8px; 
+            transition: background-color 0.2s; 
+        }
+        .download-button:hover { 
+            background-color: #6d28d9; 
+            color: white !important; /* Mantiene el color blanco al pasar el ratón */
+        }
+        .download-button svg { margin-right: 8px; }
+    </style>
+</head>
+<body class="p-4 flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-2xl chat-container">
+        <div class="chat-header">
+            {% if logo_url %}<img src="{{ logo_url }}" alt="Logo" class="w-14 h-14 rounded-full border-2 border-white object-cover">{% endif %}
+            <h1 class="text-xl font-bold mt-2">{{ company_name or 'Asistente Virtual' }}</h1>
+        </div>
+        <div id="chat-messages" class="chat-messages">
+            <div class="message bot">
+                <div class="message-avatar">{% if logo_url %}<img src="{{ logo_url }}" alt="Bot Logo" class="w-full h-full object-cover">{% else %}<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect x="4" y="12" width="16" height="8" rx="2"/><path d="M2 12h20"/><path d="M17.5 12a4.5 4.5 0 1 0-9 0"/></svg>{% endif %}</div>
+                <div class="message-bubble"><p>¡Hola! Soy <strong>{{ company_name or 'tu asistente virtual' }}</strong>. ¿Cómo puedo ayudarte hoy?</p></div>
+            </div>
+        </div>
+        <div id="typing-indicator" class="p-4 hidden"><div class="message bot"><div class="message-avatar">{% if logo_url %}<img src="{{ logo_url }}" alt="Bot Logo" class="w-full h-full object-cover">{% else %}<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect x="4" y="12" width="16" height="8" rx="2"/><path d="M2 12h20"/><path d="M17.5 12a4.5 4.5 0 1 0-9 0"/></svg>{% endif %}</div><div class="message-bubble typing-indicator"><span></span><span></span><span></span></div></div></div>
+        <div class="chat-input-area"><div class="flex items-center gap-4"><input type="text" id="chat-input" class="w-full rounded-full py-3 px-5 chat-input" placeholder="Escribe tu mensaje aquí..."><button id="send-button" class="p-3 rounded-full text-white send-button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button></div></div>
+    </div>
+    <script>
+        const LOGO_URL = "{{ logo_url or '' }}";
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-button');
+        const typingIndicator = document.getElementById('typing-indicator');
+        let conversationHistory = [];
+
+        function processBotResponse(text) {
+            const commands = [];
+            let placeholderId = 0;
+            let processedText = text;
+
+            processedText = processedText.replace(/\[SHOW_IMAGE:(.+?)\]/g, (match, imageUrl) => {
+                const placeholder = `__COMMAND_${placeholderId}__`;
+                commands.push({ placeholder, html: `<img src="${imageUrl}" alt="Imagen del asistente" class="rounded-lg max-w-full my-2">` });
+                placeholderId++;
+                return placeholder;
+            });
+
+            processedText = processedText.replace(/\[SHOW_DOCUMENT:(.+?):(.+?)\]/g, (match, docUrl, docName) => {
+                const placeholder = `__COMMAND_${placeholderId}__`;
+                commands.push({
+                    placeholder,
+                    html: `<a href="${docUrl}" download="${docName}" class="download-button"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg><span>Descargar</span></a>`
+                });
+                placeholderId++;
+                return placeholder;
+            });
+            
+            let safeText = processedText.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            let newText = safeText.replace(/\n/g, '<br>');
+            const urlRegex = /(https?:\/\/[^\s"<>]+)/g;
+            newText = newText.replace(urlRegex, url => `<a href="${url.replace(/[.,\)]+$/, '')}" target="_blank" rel="noopener noreferrer">${url.replace(/[.,\)]+$/, '')}</a>`);
+            const phoneRegex = /(^|\s|>)(\+?[\d][\d\s-]{7,15}[\d])/g;
+            newText = newText.replace(phoneRegex, (match, pre, number) => `${pre}<a href="https://wa.me/${number.replace(/\D/g, '')}" target="_blank" rel="noopener noreferrer">${number}</a>`);
+
+            commands.forEach(cmd => {
+                newText = newText.replace(cmd.placeholder, cmd.html);
+            });
+
+            return newText;
+        }
+
+        function addMessage(sender, text) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', sender);
+            const avatarElement = document.createElement('div');
+            avatarElement.classList.add('message-avatar');
+            if (sender === 'bot') {
+                if (LOGO_URL) avatarElement.innerHTML = `<img src="${LOGO_URL}" alt="Bot Logo" class="w-full h-full object-cover">`;
+                else avatarElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect x="4" y="12" width="16" height="8" rx="2"/><path d="M2 12h20"/><path d="M17.5 12a4.5 4.5 0 1 0-9 0"/></svg>`;
+            } else {
+                avatarElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+            }
+            const bubbleElement = document.createElement('div');
+            bubbleElement.classList.add('message-bubble');
+            bubbleElement.innerHTML = processBotResponse(text);
+            messageElement.appendChild(avatarElement);
+            messageElement.appendChild(bubbleElement);
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function handleSend() {
+            const userInput = chatInput.value.trim();
+            if (userInput === '') return;
+            addMessage('user', userInput);
+            conversationHistory.push({ role: "user", parts: [{ text: userInput }] });
+            chatInput.value = '';
+            sendButton.disabled = true;
+            typingIndicator.classList.remove('hidden');
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ history: conversationHistory })
+                });
+                if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || 'Error.'); }
+                const data = await response.json();
+                addMessage('bot', data.text);
+                conversationHistory.push({ role: "model", parts: [{ text: data.text }] });
+            } catch (error) {
+                addMessage('bot', `Lo siento, ocurrió un error: ${error.message}`);
+            } finally {
+                sendButton.disabled = false;
+                typingIndicator.classList.add('hidden');
+                chatInput.focus();
+            }
+        }
+        sendButton.addEventListener('click', handleSend);
+        chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend(); });
+    </script>
+</body>
+</html>
