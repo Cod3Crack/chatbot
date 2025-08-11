@@ -41,6 +41,7 @@
                 border-radius: 1.5rem;
                 border: 1px solid #374151;
                 box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                overflow: hidden;
             }
         }
 
@@ -50,8 +51,9 @@
             overflow-y: auto; 
             background-color: #111827;
         }
-        .message { margin-bottom: 1rem; display: flex; max-width: 80%; }
+        .message { margin-bottom: 1rem; display: flex; max-width: 90%; align-items: flex-end; }
         .message.user { margin-left: auto; flex-direction: row-reverse; }
+        .message-content-wrapper { display: flex; align-items: flex-end; gap: 0.5rem; }
         .message-bubble { padding: 0.75rem 1rem; border-radius: 1rem; line-height: 1.5; word-wrap: break-word; }
         .message.user .message-bubble { background-color: #3b82f6; color: white; border-bottom-right-radius: 0.25rem; }
         .message.bot .message-bubble { background-color: #374151; color: #d1d5db; border-bottom-left-radius: 0.25rem; }
@@ -59,8 +61,8 @@
         .message-bubble a:hover { color: #93c5fd; }
         .message.user .message-bubble a { color: #bfdbfe; }
         .message-avatar { width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; flex-shrink: 0; overflow: hidden; }
-        .message.user .message-avatar { background-color: #3b82f6; margin-left: 0.75rem; }
-        .message.bot .message-avatar { background-color: #4b5563; margin-right: 0.75rem; }
+        .message.user .message-avatar { background-color: #3b82f6; }
+        .message.bot .message-avatar { background-color: #4b5563; }
         
         .chat-footer {
             flex-shrink: 0; /* Evita que el footer se encoja */
@@ -79,13 +81,30 @@
         .typing-indicator span { height: 8px; width: 8px; background-color: #6b7280; border-radius: 50%; display: inline-block; animation: bounce 1.4s infinite ease-in-out both; }
         @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
         
-        .download-button { 
-            display: inline-flex; align-items: center; background-color: #7c3aed; color: white !important;
-            padding: 8px 16px; border-radius: 8px; text-decoration: none !important;
-            font-weight: 500; margin-top: 8px; transition: background-color 0.2s; 
+        /* Estilos para botones de acción */
+        .action-button {
+            display: inline-flex; align-items: center; justify-content: center;
+            text-decoration: none !important;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            flex-shrink: 0;
         }
-        .download-button:hover { background-color: #6d28d9; color: white !important; }
-        .download-button svg { margin-right: 8px; }
+        .action-button.download-button {
+            color: white !important;
+            padding: 8px 16px; border-radius: 8px;
+            background-color: #7c3aed;
+            margin-top: 8px;
+        }
+        .action-button.download-button:hover { background-color: #6d28d9; }
+        .action-button.download-button svg { margin-right: 8px; }
+
+        .action-button.whatsapp-button {
+            color: white !important;
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background-color: #25D366;
+        }
+        .action-button.whatsapp-button:hover { background-color: #128C7E; }
     </style>
 </head>
 <body>
@@ -93,13 +112,15 @@
         <div id="chat-messages" class="chat-messages">
             <!-- Mensaje inicial -->
             <div class="message bot">
-                <div class="message-avatar">{% if logo_url %}<img src="{{ logo_url }}" alt="Bot Logo" class="w-full h-full object-cover">{% else %}<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect x="4" y="12" width="16" height="8" rx="2"/><path d="M2 12h20"/><path d="M17.5 12a4.5 4.5 0 1 0-9 0"/></svg>{% endif %}</div>
-                <div class="message-bubble"><p>¡Hola! Soy <strong>{{ company_name or 'tu asistente virtual' }}</strong>. ¿Cómo puedo ayudarte hoy?</p></div>
+                <div class="message-content-wrapper">
+                    <div class="message-avatar">{% if logo_url %}<img src="{{ logo_url }}" alt="Bot Logo" class="w-full h-full object-cover">{% else %}<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect x="4" y="12" width="16" height="8" rx="2"/><path d="M2 12h20"/><path d="M17.5 12a4.5 4.5 0 1 0-9 0"/></svg>{% endif %}</div>
+                    <div class="message-bubble"><p>¡Hola! Soy <strong>{{ company_name or 'tu asistente virtual' }}</strong>. ¿Cómo puedo ayudarte hoy?</p></div>
+                </div>
             </div>
         </div>
 
         <div class="chat-footer">
-            <div id="typing-indicator" class="p-4 hidden"><div class="message bot" style="margin-bottom: 0;"><div class="message-avatar">{% if logo_url %}<img src="{{ logo_url }}" alt="Bot Logo" class="w-full h-full object-cover">{% else %}<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect x="4" y="12" width="16" height="8" rx="2"/><path d="M2 12h20"/><path d="M17.5 12a4.5 4.5 0 1 0-9 0"/></svg>{% endif %}</div><div class="message-bubble typing-indicator"><span></span><span></span><span></span></div></div></div>
+            <div id="typing-indicator" class="p-4 hidden"><div class="message bot" style="margin-bottom: 0;"><div class="message-content-wrapper"><div class="message-avatar">{% if logo_url %}<img src="{{ logo_url }}" alt="Bot Logo" class="w-full h-full object-cover">{% else %}<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect x="4" y="12" width="16" height="8" rx="2"/><path d="M2 12h20"/><path d="M17.5 12a4.5 4.5 0 1 0-9 0"/></svg>{% endif %}</div><div class="message-bubble typing-indicator"><span></span><span></span><span></span></div></div></div></div>
             <div class="chat-input-area">
                 <div class="flex items-center gap-4">
                     <input type="text" id="chat-input" class="flex-1 min-w-0 rounded-full py-3 px-5 chat-input" placeholder="Escribe tu mensaje aquí...">
@@ -109,8 +130,6 @@
         </div>
     </div>
     <script>
-        // El código JavaScript permanece igual, ya que la lógica de envío de mensajes es correcta.
-        // El problema era puramente de layout (CSS y HTML).
         const LOGO_URL = "{{ logo_url or '' }}";
         const chatMessages = document.getElementById('chat-messages');
         const chatInput = document.getElementById('chat-input');
@@ -119,57 +138,78 @@
         let conversationHistory = [];
 
         function processBotResponse(text) {
-            const commands = [];
-            let placeholderId = 0;
             let processedText = text;
+            let whatsappButton = null;
 
-            processedText = processedText.replace(/\[SHOW_IMAGE:(.+?)\]/g, (match, imageUrl) => {
-                const placeholder = `__COMMAND_${placeholderId}__`;
-                commands.push({ placeholder, html: `<img src="${imageUrl}" alt="Imagen del asistente" class="rounded-lg max-w-full my-2">` });
-                placeholderId++;
-                return placeholder;
+            // Escapar HTML para seguridad
+            processedText = processedText.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            // Reemplazar comando de WhatsApp
+            processedText = processedText.replace(/\[SHOW_WHATSAPP:([^\]]+)\]/g, (match, number) => {
+                const cleanNumber = number.replace(/\D/g, '');
+                const button = document.createElement('a');
+                button.href = `https://wa.me/${cleanNumber}`;
+                button.target = '_blank';
+                button.rel = 'noopener noreferrer';
+                button.className = 'action-button whatsapp-button';
+                button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg>`;
+                whatsappButton = button;
+                return ''; // Retorna vacío para eliminar la etiqueta del texto principal
             });
 
-            processedText = processedText.replace(/\[SHOW_DOCUMENT:(.+?):(.+?)\]/g, (match, docUrl, docName) => {
-                const placeholder = `__COMMAND_${placeholderId}__`;
-                commands.push({
-                    placeholder,
-                    html: `<a href="${docUrl}" download="${docName}" class="download-button"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg><span>Descargar</span></a>`
-                });
-                placeholderId++;
-                return placeholder;
-            });
-            
-            let safeText = processedText.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            let newText = safeText.replace(/\n/g, '<br>');
-            const urlRegex = /(https?:\/\/[^\s"<>]+)/g;
-            newText = newText.replace(urlRegex, url => `<a href="${url.replace(/[.,\)]+$/, '')}" target="_blank" rel="noopener noreferrer">${url.replace(/[.,\)]+$/, '')}</a>`);
-            const phoneRegex = /(^|\s|>)(\+?[\d][\d\s-]{7,15}[\d])/g;
-            newText = newText.replace(phoneRegex, (match, pre, number) => `${pre}<a href="https://wa.me/${number.replace(/\D/g, '')}" target="_blank" rel="noopener noreferrer">${number}</a>`);
-
-            commands.forEach(cmd => {
-                newText = newText.replace(cmd.placeholder, cmd.html);
+            // Reemplazar comando de imagen
+            processedText = processedText.replace(/\[SHOW_IMAGE:([^\]]+)\]/g, (match, imageUrl) => {
+                return `<img src="${imageUrl.replace(/"/g, '&quot;')}" alt="Imagen del asistente" class="rounded-lg max-w-full my-2">`;
             });
 
-            return newText;
+            // Reemplazar comando de documento
+            processedText = processedText.replace(/\[SHOW_DOCUMENT:([^\]]+):([^\]]+)\]/g, (match, docUrl, docName) => {
+                return `<a href="${docUrl.replace(/"/g, '&quot;')}" download="${docName.replace(/"/g, '&quot;')}" class="action-button download-button"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg><span>Descargar ${docName}</span></a>`;
+            });
+
+            // Convertir saltos de línea a <br>
+            processedText = processedText.replace(/\n/g, '<br>');
+
+            return { processedText, whatsappButton };
         }
 
         function addMessage(sender, text) {
             const messageElement = document.createElement('div');
             messageElement.classList.add('message', sender);
+            
+            const contentWrapper = document.createElement('div');
+            contentWrapper.className = 'message-content-wrapper';
+            
             const avatarElement = document.createElement('div');
             avatarElement.classList.add('message-avatar');
+
             if (sender === 'bot') {
                 if (LOGO_URL) avatarElement.innerHTML = `<img src="${LOGO_URL}" alt="Bot Logo" class="w-full h-full object-cover">`;
                 else avatarElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect x="4" y="12" width="16" height="8" rx="2"/><path d="M2 12h20"/><path d="M17.5 12a4.5 4.5 0 1 0-9 0"/></svg>`;
-            } else {
-                avatarElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+                contentWrapper.appendChild(avatarElement);
+
+                const bubbleElement = document.createElement('div');
+                bubbleElement.classList.add('message-bubble');
+                
+                const result = processBotResponse(text);
+                bubbleElement.innerHTML = result.processedText;
+                contentWrapper.appendChild(bubbleElement);
+
+                if (result.whatsappButton) {
+                    contentWrapper.appendChild(result.whatsappButton);
+                }
+
+            } else { // sender === 'user'
+                 const bubbleElement = document.createElement('div');
+                 bubbleElement.classList.add('message-bubble');
+                 bubbleElement.textContent = text;
+                 contentWrapper.appendChild(bubbleElement);
+
+                 avatarElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+                 contentWrapper.appendChild(avatarElement);
             }
-            const bubbleElement = document.createElement('div');
-            bubbleElement.classList.add('message-bubble');
-            bubbleElement.innerHTML = processBotResponse(text);
-            messageElement.appendChild(avatarElement);
-            messageElement.appendChild(bubbleElement);
+
+            messageElement.appendChild(contentWrapper);
             chatMessages.appendChild(messageElement);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
@@ -203,7 +243,6 @@
         sendButton.addEventListener('click', handleSend);
         chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend(); });
 
-        // Hacemos que el último mensaje sea visible al cargar y al aparecer el teclado
         window.addEventListener('load', () => {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         });
