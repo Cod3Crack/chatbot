@@ -141,10 +141,11 @@
             let processedText = text;
             let whatsappButton = null;
 
-            // Escapar HTML para seguridad
+            // 1. Escapar HTML para seguridad básica
             processedText = processedText.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-            // Reemplazar comando de WhatsApp
+            // 2. Procesar comandos especiales
+            // Comando de WhatsApp
             processedText = processedText.replace(/\[SHOW_WHATSAPP:([^\]]+)\]/g, (match, number) => {
                 const cleanNumber = number.replace(/\D/g, '');
                 const button = document.createElement('a');
@@ -157,17 +158,28 @@
                 return ''; // Retorna vacío para eliminar la etiqueta del texto principal
             });
 
-            // Reemplazar comando de imagen
+            // Comando de imagen
             processedText = processedText.replace(/\[SHOW_IMAGE:([^\]]+)\]/g, (match, imageUrl) => {
                 return `<img src="${imageUrl.replace(/"/g, '&quot;')}" alt="Imagen del asistente" class="rounded-lg max-w-full my-2">`;
             });
 
-            // Reemplazar comando de documento
+            // Comando de documento
             processedText = processedText.replace(/\[SHOW_DOCUMENT:([^\]]+):([^\]]+)\]/g, (match, docUrl, docName) => {
                 return `<a href="${docUrl.replace(/"/g, '&quot;')}" download="${docName.replace(/"/g, '&quot;')}" class="action-button download-button"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg><span>Descargar ${docName}</span></a>`;
             });
 
-            // Convertir saltos de línea a <br>
+            // 3. NUEVO: Detectar y convertir URLs a enlaces clicables
+            const urlRegex = /(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+)/g;
+            processedText = processedText.replace(urlRegex, (match) => {
+                let url = match;
+                if (!url.startsWith('http')) {
+                    url = 'https://' + url;
+                }
+                // Usamos las clases de Tailwind para el estilo del enlace
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer">${match}</a>`;
+            });
+
+            // 4. Convertir saltos de línea a <br>
             processedText = processedText.replace(/\n/g, '<br>');
 
             return { processedText, whatsappButton };

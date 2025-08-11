@@ -64,7 +64,7 @@ INFORMACIÓN EN TIEMPO REAL:
     Claro, puedes contactarnos por WhatsApp.
     [SHOW_WHATSAPP:573002291974]
 
-2.  REGLA PARA LISTAS: NO uses markdown para listas. NO uses asteriscos (*) o guiones (-) para crear viñetas. Formatea las listas como texto plano, separando cada elemento con un salto de línea.
+2.  REGLA DE FORMATO DE TEXTO: NO uses NINGÚN tipo de formato markdown. Esto incluye, pero no se limita a: asteriscos (*) para negrita o listas, guiones (-) para listas, y almohadillas (#) para encabezados. TODA la respuesta debe ser en texto plano. Las listas deben separarse con saltos de línea, sin viñetas.
     Ejemplo de formato de lista CORRECTO:
     Camiseta Adulto: $25.000
     Camiseta Niño: $20.000
