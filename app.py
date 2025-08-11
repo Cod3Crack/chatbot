@@ -5,6 +5,9 @@ from flask import Flask, request, jsonify, render_template, flash, redirect, url
 from werkzeug.utils import secure_filename
 from itertools import cycle
 from PIL import Image, ImageDraw, ImageOps
+import datetime
+import pytz # <-- AÑADIDO: Librería para manejar zonas horarias
+import locale # <-- AÑADIDO: Para poner la fecha en español
 
 # --- CONFIGURACIÓN INICIAL ---
 UPLOAD_FOLDER = 'static/uploads'
@@ -18,12 +21,27 @@ IMAGE_CATALOG_FILE = 'image_catalog.json'
 DOC_CATALOG_FILE = 'doc_catalog.json'
 LOGO_FILENAME = 'logo'
 FAVICON_FILENAME = 'favicon.png'
+# --- MODIFICADO: Zona horaria cambiada a Colombia ---
+TIMEZONE = 'America/Bogota'
 
 app = Flask(__name__, template_folder='templates')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['IMAGE_UPLOAD_FOLDER'] = IMAGE_UPLOAD_FOLDER
 app.config['DOC_UPLOAD_FOLDER'] = DOC_UPLOAD_FOLDER
 app.config['SECRET_KEY'] = 'a-very-secret-key-indeed'
+
+# --- AÑADIDO: Configurar el idioma para fechas ---
+try:
+    # Para sistemas Linux/macOS
+    locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+except locale.Error:
+    try:
+        # Para sistemas Windows
+        locale.setlocale(locale.LC_TIME, 'es-ES')
+    except locale.Error:
+        # Fallback si los anteriores fallan
+        print("No se pudo establecer la configuración regional en español. Las fechas pueden aparecer en inglés.")
+
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['IMAGE_UPLOAD_FOLDER'], exist_ok=True)
@@ -36,9 +54,13 @@ except ImportError:
     API_KEYS = []
 api_key_iterator = cycle(API_KEYS) if API_KEYS else cycle([None])
 
-# --- Plantilla base para la IA ---
+# --- MODIFICADO: Plantilla base para la IA ---
+# Se añadió un campo para la hora actual.
 BASE_SYSTEM_INSTRUCTION = """
 Eres un asistente virtual experto para una empresa llamada '{company_name}'. Tu objetivo es ayudar a los usuarios basándote ESTRICTAMENTE en la información, imágenes y documentos proporcionados.
+
+INFORMACIÓN EN TIEMPO REAL:
+- La fecha y hora actual es: {current_time}. Debes usar esta información para responder preguntas sobre horarios de atención (por ejemplo, si la empresa está abierta o cerrada en este momento). Compara la hora actual con el horario de atención que se te proporciona en la base de conocimiento.
 
 {image_instructions}
 {doc_instructions}
@@ -175,6 +197,12 @@ def delete_document(filename):
 def chat():
     if not API_KEYS: return jsonify({"error": "Servicio no configurado."}), 503
     try:
+        # --- AÑADIDO: Obtener la hora actual ---
+        tz = pytz.timezone(TIMEZONE)
+        current_time = datetime.datetime.now(tz)
+        # --- MODIFICADO: Formato de 12 horas (AM/PM) ---
+        formatted_time = current_time.strftime('%A, %d de %B de %Y, %I:%M:%S %p')
+
         company_context = read_from_file(KNOWLEDGE_FILE, "No se ha proporcionado información.")
         company_name = read_from_file(COMPANY_NAME_FILE, "la empresa")
         image_catalog = read_json_file(IMAGE_CATALOG_FILE)
@@ -192,7 +220,6 @@ REGLA PARA IMÁGENES: Si la pregunta del usuario coincide con las etiquetas de u
         doc_instructions = ""
         if doc_catalog:
             doc_list = "\n".join([f"- Archivo '{fname}': etiquetas '{tags}'." for fname, tags in doc_catalog.items()])
-            # --- INSTRUCCIÓN CORREGIDA ---
             doc_instructions = f"""
 INFORMACIÓN DE DOCUMENTOS DISPONIBLES:
 {doc_list}
@@ -202,7 +229,14 @@ Claro, aquí tienes la guía que solicitaste.
 [SHOW_DOCUMENT:/static/documents/guia.pdf:guia.pdf]
 """
 
-        formatted_instruction = BASE_SYSTEM_INSTRUCTION.format(company_name=company_name, company_info=company_context, image_instructions=image_instructions, doc_instructions=doc_instructions)
+        # --- MODIFICADO: Añadimos la hora actual al formatear la instrucción ---
+        formatted_instruction = BASE_SYSTEM_INSTRUCTION.format(
+            company_name=company_name,
+            company_info=company_context,
+            image_instructions=image_instructions,
+            doc_instructions=doc_instructions,
+            current_time=formatted_time # <-- Pasamos la hora aquí
+        )
         system_instruction = {"role": "model", "parts": [{"text": formatted_instruction}]}
         data = request.get_json()
         history = data.get('history', [])
